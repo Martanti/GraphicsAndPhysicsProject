@@ -1,5 +1,5 @@
 -- Note -- 
-Master branch contained around 100 commits
+Simple multithreading with 101 commits
 
 -- Original readme --
 
