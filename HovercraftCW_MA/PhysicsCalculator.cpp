@@ -1,4 +1,6 @@
 #include "PhysicsCalculator.h"
+#include <iostream>
+#include <glm\gtx\string_cast.hpp>
 
 const float CPhysicsCalculator::m_ksfGravity = -9.81f;
 //default value
@@ -22,24 +24,32 @@ void CPhysicsCalculator::RecalculatePhysics(vector<CGameObject*>& rvgoWritable, 
 		{
 			vec3 vec3Acceleration, vec3Velocity, vec3Position;
 
-			funcpLinearCalculation(*pgoReadableItem, vec3Acceleration, vec3Velocity, vec3Position, rfDeltaTime);
-
 			CGameObject* pgoWritableItem = rvgoWritable[iIndex];
+
+			pgoReadableItem->m_pbdPhysicalBody->m_vec3TotalLineraForce = pgoWritableItem->m_pbdPhysicalBody->m_vec3TotalLineraForce;
+			funcpLinearCalculation(*pgoReadableItem, vec3Acceleration, vec3Velocity, vec3Position, rfDeltaTime);
 
 			pgoWritableItem->m_pbdPhysicalBody->m_vec3Acceleration = vec3Acceleration;
 			pgoWritableItem->m_pbdPhysicalBody->m_vec3Velocity = vec3Velocity;
 			pgoWritableItem->m_vec3Position = vec3Position;
+
+			if (pgoReadableItem->m_strName =="Player"){
+				//std::cout<<"Pos: "<<glm::to_string(vec3Position)<<" Vel: " << glm::to_string(vec3Velocity)<< " Acc: "<<glm::to_string(vec3Acceleration)<<" TotalLinear:"<< glm::to_string(pgoReadableItem->m_pbdPhysicalBody->m_vec3TotalLineraForce)<<" delta: "<<rfDeltaTime<<"\n";
+				//std::cout << "Total force during physics: W: " << glm::to_string(pgoWritableItem->m_pbdPhysicalBody->m_vec3TotalLineraForce) << " R:" << glm::to_string(pgoReadableItem->m_pbdPhysicalBody->m_vec3TotalLineraForce) << "\n";
+			}
+
 
 			CRotattingBody* prbCurrent = static_cast<CRotattingBody*>(pgoReadableItem->m_pbdPhysicalBody);
 			if (prbCurrent != nullptr) {
 
 				vec3 vec3AngularAcceleration, vec3AngularVelocity, vec3Orientation;
 
+				CRotattingBody* prbWritable = static_cast<CRotattingBody*>(pgoWritableItem->m_pbdPhysicalBody);
+
+				prbCurrent->m_vec3TotalRotationForce = prbWritable->m_vec3TotalRotationForce;
 				funcpRotationalCalculation(*prbCurrent, vec3AngularAcceleration, vec3AngularVelocity, vec3Orientation, rfDeltaTime);
 
 				this->Limit3DOrientation(vec3Orientation);
-
-				CRotattingBody* prbWritable = static_cast<CRotattingBody*>(pgoWritableItem->m_pbdPhysicalBody);
 
 				prbWritable->m_vec3AngularAcceleration = vec3AngularAcceleration;
 				prbWritable->m_vec3AngularVelocity = vec3AngularVelocity;
@@ -140,6 +150,7 @@ void CPhysicsCalculator::Damping(vector<CGameObject*>& rvgoWritable, vector<CGam
 	for (CGameObject* pgoReadableItem : rvgoReadable) {
 		if (pgoReadableItem->m_pbdPhysicalBody != nullptr)
 		{
+
 			//damp the velocity
 
 			CGameObject* pgoWritableItem = rvgoWritable[iIndex];
@@ -153,6 +164,10 @@ void CPhysicsCalculator::Damping(vector<CGameObject*>& rvgoWritable, vector<CGam
 
 			//reset all the forces for the next frame as the input has already been calculated
 			pgoWritableItem->m_pbdPhysicalBody->m_vec3TotalLineraForce = { 0, 0, 0 };
+			if (pgoReadableItem->m_strName == "Player")
+			{
+				std::cout << "Total force after damp: W: " << glm::to_string(pgoWritableItem->m_pbdPhysicalBody->m_vec3TotalLineraForce)<<" R:" <<glm::to_string(pgoReadableItem->m_pbdPhysicalBody->m_vec3TotalLineraForce)<<"\n";
+			}
 
 			//damp rotations
 			CRotattingBody* prbReadable = static_cast<CRotattingBody*>(pgoReadableItem->m_pbdPhysicalBody);

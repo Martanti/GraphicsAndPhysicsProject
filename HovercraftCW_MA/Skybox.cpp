@@ -1,4 +1,5 @@
 #include "Skybox.h"
+#include <glm\gtx\string_cast.hpp>
 
 CSkybox::CSkybox(): CGameObject() {
 
@@ -75,6 +76,7 @@ void CSkybox::ProgramStart()
 void CSkybox::ProgramUpdate()
 {
 	CCamera* pcamCamera = static_cast<CCamera*>(CTagSystem::GetTagged("Camera")[0]);
+	//std::cout << "	camera pos " << glm::to_string(pcamCamera->m_vec3Position)<<"\n";
 	this->m_vec3Position = pcamCamera->m_vec3Position;
 }
 

@@ -1,4 +1,5 @@
 #include "AutoMovingObject.h"
+#include <glm\gtx\string_cast.hpp>
 
 CAutoMovingObject::CAutoMovingObject(string* rstrPathToModel, string* rstrPathToTexture, SMaterial* rmatrMaterial) : CGameObject(rstrPathToModel, rstrPathToTexture, rmatrMaterial)
 {

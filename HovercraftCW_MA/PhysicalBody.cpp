@@ -39,6 +39,10 @@ CPhysicalBody::CPhysicalBody(float& rfMass, vec3& rvec3Acceleration, vec3& rvec3
 	this->m_fInvertedMass = 1 / this->m_fMass;
 }
 
+//CPhysicalBody::~CPhysicalBody()
+//{
+//}
+
 void CPhysicalBody::AddForce(vec3& rvec3Force, vec3& rvec3RelativePosition, CPhysicalBody::EForceType eftForce){
 	this->m_vec3TotalLineraForce += (rvec3Force * this->m_fMass);
 }

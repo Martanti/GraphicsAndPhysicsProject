@@ -1,4 +1,5 @@
 #include "GameEngine.h"
+#include <glm\gtx\string_cast.hpp>
 
 #pragma region Static variable initialization
 float CGameEngine::sm_fDeltaTime;
@@ -27,6 +28,11 @@ const unsigned int sm_kuiBufferAmount = 2;
 
 unsigned int CGameEngine::sm_uiWritingBuffer;
 unsigned int CGameEngine::sm_uiReadingBuffer;
+
+std::thread CGameEngine::sm_thrPhysics;
+std::thread CGameEngine::sm_thrUpdate;
+std::thread CGameEngine::sm_thrCollisions;
+std::thread CGameEngine::sm_thrSystemUpdates;
 #pragma endregion
 
 CGameEngine::CGameEngine() {}
@@ -224,6 +230,8 @@ void CGameEngine::DrawScene()
 	}
 #pragma endregion
 
+	//std::cout << "Drawing DONE" << "\n";
+
 	if (CInput::m_mKeys['n']) {
 		glEnable(GL_MULTISAMPLE);
 	}
@@ -244,6 +252,10 @@ void CGameEngine::CleanupGame()
 	if (CGameEngine::sm_bDebugMode)
 		std::cout << "Cleaning:\n";
 
+	sm_thrPhysics.join();
+	//sm_thrUpdate.join();
+	sm_thrCollisions.join();
+	sm_thrSystemUpdates.join();
 
 	for (size_t i = 0; i < CGameEngine::sm_kuiBufferAmount; i++)
 	{
@@ -268,35 +280,31 @@ void CGameEngine::BeginGameLoop()
 	std::chrono::steady_clock::time_point tmpntSystemStart = std::chrono::steady_clock::now();
 	CTime tmTime(tmpntSystemStart);
 
-	std::thread thrPhysics;
-	std::thread thrUpdate;
-	std::thread thrCollisions;
-	std::thread thrSystemUpdate;
+	//sm_thrUpdate = std::thread(CGameEngine::CalculateUpdate);
+	sm_thrPhysics = std::thread(CGameEngine::CalculatePhysics);
+	sm_thrCollisions = std::thread(CGameEngine::CalculateCollision);
+	sm_thrSystemUpdates = std::thread(CGameEngine::SystemManagement);
 
-	const float kfTimeCap = 0.0083f;
-	float fCurrentTime = 0;
+	float fPassedTime = 0;
+
+	//90 Hz
+	const float kfFrameCap = 0.0111111111111111;
 
 	while (CGameEngine::sm_bContinueThreads)
 	{
-		std::chrono::steady_clock::time_point tmpntSystemUpdate = std::chrono::steady_clock::now();
-		
-		CGameEngine::sm_fDeltaTime = tmTime.RecalculateDelta(tmpntSystemUpdate);
+		if (fPassedTime<kfFrameCap)
+		{
+			std::chrono::steady_clock::time_point tmpntSystemUpdate = std::chrono::steady_clock::now();
+			fPassedTime += tmTime.RecalculateDelta(tmpntSystemUpdate);
+			continue;
+		}
+
+		CGameEngine::sm_fDeltaTime = fPassedTime;
+		fPassedTime = 0;
 		glutPostRedisplay();
-
-		thrPhysics = std::thread(CGameEngine::CalculatePhysics);
-		thrUpdate = std::thread(CGameEngine::CalculateUpdate);
-		thrCollisions = std::thread(CGameEngine::CalculateCollision);
-		thrSystemUpdate = std::thread(CGameEngine::SystemManagement);
-
+		CGameEngine::SystemManagement();
 		glutMainLoopEvent();
-
-		thrPhysics.join();
-		thrUpdate.join();
-		thrCollisions.join();
-		thrSystemUpdate.join();
-
 		CGameEngine::UpdateDataBuffers();
-
 	}
 }
 
@@ -316,7 +324,7 @@ void CGameEngine::SystemManagement()
 		if (CGameEngine::sm_bDebugMode)
 			std::cout << "Exiting the program\n";
 		CGameEngine::sm_bContinueThreads = false;
-		//exit(0);
+		exit(0);
 		//glutLeaveMainLoop(); //so the callback fuction for cleanup will be called
 	}
 
@@ -329,7 +337,7 @@ void CGameEngine::SystemManagement()
 	}
 
 	//check input to change the integration type
-	if (CInput::m_mKeys['[']) {
+	if (CInput::m_mSpecialKeys[9]) {
 		if (CGameEngine::sm_bDebugMode)
 			std::cout << "Physics Intergration type set to Explicit Eulers\n";
 
@@ -337,7 +345,7 @@ void CGameEngine::SystemManagement()
 			CGameEngine::sm_phcaPhysicsCalculator.ChangeCurrentIntegration(CPhysicsCalculator::EIntegrationType::ExplicitEulers);
 	}
 
-	else if (CInput::m_mKeys[']']) {
+	else if (CInput::m_mSpecialKeys[10]) {
 		if (CGameEngine::sm_bDebugMode)
 			std::cout << "Physics Intergration type set to Semi Explicit Eulers\n";
 
@@ -345,7 +353,7 @@ void CGameEngine::SystemManagement()
 			CGameEngine::sm_phcaPhysicsCalculator.ChangeCurrentIntegration(CPhysicsCalculator::EIntegrationType::SemiExplicitEulers);
 	}
 
-	else if (CInput::m_mKeys['\\']) {
+	else if (CInput::m_mSpecialKeys[11]) {
 		if (CGameEngine::sm_bDebugMode)
 			std::cout << "Physics Intergration type set to Velocity Verlet\n";
 
@@ -390,47 +398,115 @@ void CGameEngine::KeySpecialUp(int iKeyCode, int x, int y) {
 #pragma region Multithreading
 void CGameEngine::CalculatePhysics()
 {
+	std::chrono::steady_clock::time_point tmpntSystemStart = std::chrono::steady_clock::now();
+	CTime tmTime(tmpntSystemStart);
 
-	if (CGameEngine::sm_bDebugMode)
-		std::cout << "	Adding gravity\n";
+	float fPassedTime = 0;
 
-	for (auto item : CGameEngine::sm_rvpgoBuffers[CGameEngine::sm_uiWritingBuffer])
+	//180 Hz
+	const float kfFrameCap = 0.0055555555555556f;
+
+	while (CGameEngine::sm_bContinueThreads)
 	{
-		if (item->m_pbdPhysicalBody != nullptr && item->m_pbdPhysicalBody->m_bIsAffectedByGravity) {
-			vec3 gravityForce(0, CPhysicsCalculator::m_ksfGravity, 0);
-			item->m_pbdPhysicalBody->m_vec3TotalLineraForce += gravityForce * item->m_pbdPhysicalBody->m_fMass;
+		if (fPassedTime < kfFrameCap)
+		{
+			std::chrono::steady_clock::time_point tmpntSystemUpdate = std::chrono::steady_clock::now();
+			fPassedTime += tmTime.RecalculateDelta(tmpntSystemUpdate);
+			continue;
 		}
+
+
+		if (CGameEngine::sm_bDebugMode)
+			std::cout << "			Update\n";
+
+		//run through game object updates which calculates all the changes
+
+		CGameObject::sm_fDeltaTime = fPassedTime;
+
+		for (auto item : CGameEngine::sm_rvpgoBuffers[CGameEngine::sm_uiWritingBuffer]) {
+			item->ProgramUpdate();
+		}
+
+
+		if (CGameEngine::sm_bDebugMode)
+			std::cout << "	Adding gravity\n";
+
+		for (auto item : CGameEngine::sm_rvpgoBuffers[CGameEngine::sm_uiWritingBuffer])
+		{
+			if (item->m_pbdPhysicalBody != nullptr && item->m_pbdPhysicalBody->m_bIsAffectedByGravity) {
+				vec3 gravityForce(0, CPhysicsCalculator::m_ksfGravity, 0);
+				item->m_pbdPhysicalBody->m_vec3TotalLineraForce += gravityForce * item->m_pbdPhysicalBody->m_fMass;
+			}
+		}
+
+		//std::cout << "	Calculating physics done" << "\n";
+
+		//run through physics calculations
+		if (CGameEngine::sm_bDebugMode)
+			std::cout << "	Calculating physics\n";
+
+		//std::cout << fDeltaTime << "\n";
+		sm_phcaPhysicsCalculator.RecalculatePhysics(CGameEngine::sm_rvpgoBuffers[CGameEngine::sm_uiWritingBuffer], CGameEngine::sm_rvpgoBuffers[CGameEngine::sm_uiReadingBuffer], fPassedTime);
+		fPassedTime = 0;
 	}
-
-	//run through physics calculations
-	if (CGameEngine::sm_bDebugMode)
-		std::cout << "	Calculating physics\n";
-	sm_phcaPhysicsCalculator.RecalculatePhysics(CGameEngine::sm_rvpgoBuffers[CGameEngine::sm_uiWritingBuffer], CGameEngine::sm_rvpgoBuffers[CGameEngine::sm_uiReadingBuffer], CGameEngine::sm_fDeltaTime);
-
 }
 
 void CGameEngine::CalculateCollision()
 {
-	if (CGameEngine::sm_bDebugMode)
-		std::cout << "		Checking collisions\n";
+	std::chrono::steady_clock::time_point tmpntSystemStart = std::chrono::steady_clock::now();
+	CTime tmTime(tmpntSystemStart);
 
-	vector<CGameObject*> vpgoReadable = CTagSystem::GetTagged("Collides");
-	vector<CGameObject*> vpgoWriteable = CTagSystem::GetTaggedSpecific("Collides", CGameEngine::sm_uiWritingBuffer);
+	float fPassedTime = 0;
 
-	CGameEngine::sm_colcaCollisionCalculator.RecalculateCollision( vpgoWriteable,  vpgoReadable );
+	//180 Hz
+	const float kfFrameCap = 0.0055555555555556f;
+
+	while (CGameEngine::sm_bContinueThreads)
+	{
+		if (fPassedTime < kfFrameCap)
+		{
+			std::chrono::steady_clock::time_point tmpntSystemUpdate = std::chrono::steady_clock::now();
+			fPassedTime += tmTime.RecalculateDelta(tmpntSystemUpdate);
+			continue;
+		}
+
+		fPassedTime = 0;
+
+		if (CGameEngine::sm_bDebugMode)
+			std::cout << "		Checking collisions\n";
+
+		vector<CGameObject*> vpgoReadable = CTagSystem::GetTagged("Collides");
+		vector<CGameObject*> vpgoWriteable = CTagSystem::GetTaggedSpecific("Collides", CGameEngine::sm_uiWritingBuffer);
+
+		CGameEngine::sm_colcaCollisionCalculator.RecalculateCollision(vpgoWriteable, vpgoReadable);
+	}
 }
 
 void CGameEngine::CalculateUpdate()
 {	
-	if (CGameEngine::sm_bDebugMode)
-		std::cout << "			Update\n";
+	std::chrono::steady_clock::time_point tmpntSystemStart = std::chrono::steady_clock::now();
+	CTime tmTime(tmpntSystemStart);
 
-	//run through game object updates which calculates all the changes
-	CGameObject::sm_fDeltaTime = CGameEngine::sm_fDeltaTime;
+	float fPassedTime = 0;
 
-	for (auto item : CGameEngine::sm_rvpgoBuffers[CGameEngine::sm_uiWritingBuffer]) {
-		item->ProgramUpdate();
+	//180 Hz
+	const float kfFrameCap = 0.0055555555555556f;
+
+	while (CGameEngine::sm_bContinueThreads)
+	{
+		if (fPassedTime < kfFrameCap)
+		{
+			std::chrono::steady_clock::time_point tmpntSystemUpdate = std::chrono::steady_clock::now();
+			fPassedTime += tmTime.RecalculateDelta(tmpntSystemUpdate);
+			continue;
+		}
+
+		
+
+		//std::cout << "		Update DONE" << "\n";
+		fPassedTime = 0;
 	}
+	
 }
 
 void CGameEngine::UpdateDataBuffers()
@@ -441,6 +517,7 @@ void CGameEngine::UpdateDataBuffers()
 
 	if (CGameEngine::sm_uiWritingBuffer >= CGameEngine::sm_kuiBufferAmount)
 		CGameEngine::sm_uiWritingBuffer = 0;
+	std::cout << "SWITCH\n";
 }
 
 #pragma endregion

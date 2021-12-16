@@ -133,5 +133,10 @@ private:
 	static const unsigned int sm_kuiBufferAmount = 2;
 
 	static vector<CGameObject*>  sm_rvpgoBuffers[sm_kuiBufferAmount];
+
+	static std::thread sm_thrPhysics;
+	static std::thread sm_thrUpdate;
+	static std::thread sm_thrCollisions;
+	static std::thread sm_thrSystemUpdates;
 #pragma endregion
 };

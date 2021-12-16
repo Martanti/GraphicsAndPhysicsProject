@@ -1,4 +1,5 @@
 #include "Camera.h"
+#include <glm\gtx\string_cast.hpp>
 
 #pragma region Static variable
 const vec3 CCamera::sm_kvec3FixedPoint = { 0.0, 10.0f, 10.0 };
@@ -29,6 +30,9 @@ void CCamera::ProgramStart() {
 void CCamera::ProgramUpdate()
 {
 	//check for input to check integration type
+
+	//std::cout << "camera specs: pos - " << glm::to_string(this->m_vec3Position)<<" center"<<glm::to_string(this->m_vec3Center)<<"\n";
+
 	if (CInput::m_mSpecialKeys[5]){
 		CCamera::ChangeCameraCalculation(CCamera::ECameraType::FixedPoint);
 		if (!CCamera::sm_bHasSplashScreenBeenClosed)
@@ -62,7 +66,7 @@ CGameObject* CCamera::Clone()
 	return pcamClone;
 }
 
-void CCamera::Draw(){//empty statement just so default isn't called and there is no extra computational time
+void CCamera::Draw(){//empty statement just so default isn't called and there is no extra coputational time
 }
 
 void CCamera::ChangeCameraCalculation(ECameraType rcamTypeToSet)
@@ -114,6 +118,9 @@ void CCamera::CalculateThirdPerson(CCamera& rcamMain, CGameObject& rgoObservable
 	rcamMain.m_vec3Center = rgoObservable.m_vec3Position;
 	//so camera looks above the player and not dead center
 	rcamMain.m_vec3Center.y += 3;
+
+	/*if (*(CGameObject::sm_pbDebugMode))
+		std::cout << "Camera: third person\n";*/
 }
 
 void CCamera::CalculateTopToDown(CCamera& rcamMain, CGameObject& rgoObservable)
@@ -136,6 +143,9 @@ void CCamera::CalculateTopToDown(CCamera& rcamMain, CGameObject& rgoObservable)
 	if (prbCurrent != nullptr && prbFollowed != nullptr) {
 		prbCurrent->m_vec3Orientation.y = prbFollowed->m_vec3Orientation.y;
 	}
+
+	/*if (*(CGameObject::sm_pbDebugMode))
+		std::cout << "Camera: top down\n";*/
 }
 
 void CCamera::CalculateFixedPoint(CCamera& rcamMain, CGameObject& rgoObservable)
@@ -143,6 +153,9 @@ void CCamera::CalculateFixedPoint(CCamera& rcamMain, CGameObject& rgoObservable)
 	rcamMain.m_vec3Up = CCamera::sm_kvec3GeneralUp;
 	rcamMain.m_vec3Position = CCamera::sm_kvec3FixedPoint;
 	rcamMain.m_vec3Center = rgoObservable.m_vec3Position;
+	
+	/*if (*(CGameObject::sm_pbDebugMode))
+		std::cout << "Camera:fixed point\n";*/
 }
 
 void CCamera::CalculateSplashScreen(CCamera& rcamMain, CGameObject& rgoObservable)

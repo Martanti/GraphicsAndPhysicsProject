@@ -1,4 +1,5 @@
 #include "Light.h"
+#include <glm\gtx\string_cast.hpp>
 vec3 CLight::sm_vec3GlobalAmbience;
 
 void CLight::ProgramStart()

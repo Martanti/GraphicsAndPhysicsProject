@@ -31,5 +31,8 @@ public:
 	CGameObject* Clone();
 
 	void Draw();
+
+	
+
 };
 

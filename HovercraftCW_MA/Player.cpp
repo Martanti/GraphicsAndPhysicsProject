@@ -1,6 +1,7 @@
 #include "Player.h"
 
 #include <algorithm>
+#include <glm\gtx\string_cast.hpp>
 
 CPlayer::CPlayer(SMaterial * pmatrMaterial) : CGameObject(&(string) "../Geometry/Hovercraft.obj", & (string)"../Geometry/HovercraftTexture.jpg", pmatrMaterial)
 {
@@ -61,8 +62,8 @@ void CPlayer::ProgramUpdate()
 
 	if (CInput::m_mKeys['w']){
 		vec3Force = { 0, 0, -10 };
+		vec3Force *= CGameObject::sm_fDeltaTime * 1000;
 		vec3ForcePoint = { 0,0,-1 };
-		
 		this->m_pbdPhysicalBody->AddForce(vec3Force, vec3ForcePoint);
 		
 	}
@@ -70,20 +71,23 @@ void CPlayer::ProgramUpdate()
 	if (CInput::m_mKeys['s']){
 		vec3Force = {0, 0, 10 };
 		vec3ForcePoint = { 0, 0, 1 };
+		vec3Force *= CGameObject::sm_fDeltaTime * 1000;
 		this->m_pbdPhysicalBody->AddForce(vec3Force, vec3ForcePoint);
 	}
 
 	if(CInput::m_mKeys['e'])
 	{
-		vec3Force = { -5.f, 0, 0 };
+		vec3Force = { -3.5f, 0, 0 };
 		vec3ForcePoint = { 1, 0, 1 };
+		vec3Force *= CGameObject::sm_fDeltaTime * 1000;
 		this->m_pbdPhysicalBody->AddForce(vec3Force, vec3ForcePoint);
 	}
 
 	if (CInput::m_mKeys['q'])
 	{
-		vec3Force = { 5.f, 0, 0 };
+		vec3Force = { 3.5f, 0, 0 };
 		vec3ForcePoint = { 1, 0, 1 };
+		vec3Force *= CGameObject::sm_fDeltaTime * 1000;
 		this->m_pbdPhysicalBody->AddForce(vec3Force, vec3ForcePoint);
 	}
 
@@ -93,6 +97,7 @@ void CPlayer::ProgramUpdate()
 	{
 		vec3Force = { 5, 0, 0 };
 		vec3ForcePoint = { 1, 0, 0 };
+		vec3Force *= CGameObject::sm_fDeltaTime * 1000;
 		this->m_pbdPhysicalBody->AddForce(vec3Force, vec3ForcePoint);
 	}
 
@@ -100,8 +105,11 @@ void CPlayer::ProgramUpdate()
 	{
 		vec3Force = { -5, 0, 0 };
 		vec3ForcePoint = { -1, 0, 0 };
+		vec3Force *= CGameObject::sm_fDeltaTime * 1000;
 		this->m_pbdPhysicalBody->AddForce(vec3Force, vec3ForcePoint);
 	}	
+
+	std::cout << "Update total force: W" << glm::to_string(this->m_pbdPhysicalBody->m_vec3TotalLineraForce) << " R:" << glm::to_string(this->m_pbdPhysicalBody->m_ppbReadable->m_vec3TotalLineraForce) << "\n";
 }
 
 void CPlayer::Draw()
@@ -126,7 +134,12 @@ CGameObject* CPlayer::Clone()
 	//create all other pointers like rotating body and similar
 	CRotattingBody* prbClonedPhyiscs = new CRotattingBody(*static_cast<CRotattingBody*>(this->m_pbdPhysicalBody));
 	
+	prbClonedPhyiscs->m_ppbReadable = this->m_pbdPhysicalBody;
+
+	this->m_pbdPhysicalBody->m_ppbReadable = prbClonedPhyiscs;
+
 	pplClone->m_pbdPhysicalBody = prbClonedPhyiscs;
+
 
 	return pplClone;
 }

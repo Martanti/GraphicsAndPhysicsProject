@@ -19,3 +19,4 @@ private:
 	static float m_fWindSpeed;
 
 };
+

@@ -20,3 +20,4 @@ public:
 	void Draw();
 	CGameObject* Clone();
 };
+

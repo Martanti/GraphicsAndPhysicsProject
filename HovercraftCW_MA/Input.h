@@ -13,3 +13,4 @@ public:
 	static map<char, bool> m_mKeys;
 	static map<int, bool> m_mSpecialKeys;
 };
+

@@ -67,6 +67,10 @@ CGameObject* CGameObject::Clone()
 
 			pgoClone->m_pbdPhysicalBody = ppbClone;
 		}
+
+		//set reference
+		pgoClone->m_pbdPhysicalBody->m_ppbReadable = this->m_pbdPhysicalBody;
+		this->m_pbdPhysicalBody->m_ppbReadable = pgoClone->m_pbdPhysicalBody;
 	}
 	return pgoClone;
 }

@@ -1,5 +1,5 @@
 -- Note -- 
-Master branch contained around 100 commits
+Multithreading independant branch contained around 97 commits
 
 -- Original readme --
 

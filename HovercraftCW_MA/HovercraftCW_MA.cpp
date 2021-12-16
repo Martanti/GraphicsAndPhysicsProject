@@ -133,5 +133,11 @@ int main(int argc, char** argv)
 	geEngine.AddGameObject(pwaWind);
 #pragma endregion
 
+
+	/*TO DO:
+	- why you can't move when in debug mode
+	- Make sure that the second buffer is cleaned on exit
+	*/
+
 	geEngine.StartEngine();
 }

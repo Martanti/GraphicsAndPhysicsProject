@@ -19,3 +19,4 @@ public:
 private:
 	static std::map<std::string, std::vector<CGameObject*>> sm_rmpTagBuffers[2];
 };
+

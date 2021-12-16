@@ -1,4 +1,5 @@
 #include "CollisionCalculator.h"
+#include <glm\gtx\string_cast.hpp>
 
 //https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_collision_detection
 //was used as in inspiration for some of the calculations
@@ -18,6 +19,8 @@ void CCollisionCalculator::Partition(vector<CGameObject*>& rvgoWritable, vector<
 	for (auto& row : this->m_vtpgoCollisionGrid) {
 		for (auto& vpgoCell : row) {
 			vpgoCell.clear();
+			//vpgoCell.shrink_to_fit();
+			//vpgoCell.reserve(20);
 		}
 	}
 
@@ -64,7 +67,7 @@ void CCollisionCalculator::Partition(vector<CGameObject*>& rvgoWritable, vector<
 
 void CCollisionCalculator::CalculatePairs()
 {
-	//both objects are over the border and are in multiple grid this map will allow inserting both their pointers and checking that they have already collided this will allow to avoid duplicate responses
+	//both objects are over the border and are in multiple grid this map will allow inserting both their pointers and checking that they have already collided this will allow creating multiple collsion points and thus reduce amount of physical bugs occuring
 
 	map<tuple<CGameObject*, CGameObject*>, bool> mAlreadyCollidedItems;
 
@@ -412,6 +415,9 @@ SCollisionData CCollisionCalculator::GetCollisionData(CSphereCollider& rscolSher
 	float fDistance = glm::distance(*rscolShereColider1.m_pvec3ObjectPosition, *rscolSphereColider2.m_pvec3ObjectPosition);
 
 	float radiiSum = (rscolShereColider1.m_fRadius + rscolSphereColider2.m_fRadius);
+	//	float fDifference = fDistance - (rscolShereColider1.m_fRadius + rscolSphereColider2.m_fRadius);
+
+		//if (fDifference <= 0) {
 	if (fDistance <= radiiSum)
 	{
 		coldtInfo.m_bIsThereCollision = true;

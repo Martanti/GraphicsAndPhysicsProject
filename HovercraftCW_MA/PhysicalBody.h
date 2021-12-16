@@ -30,5 +30,7 @@ public:
 	bool m_bIsAffectedByGravity = true;
 
 	virtual void AddForce(vec3& rvec3Force, vec3& rvec3RelativePosition, CPhysicalBody::EForceType eftForce = CPhysicalBody::EForceType::Input);
+
+	CPhysicalBody* m_ppbReadable;
 };
 

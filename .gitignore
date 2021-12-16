@@ -393,5 +393,3 @@ MigrationBackup/
 !glew32.lib
 !glew32s.lib
 !Geometry/*.obj
-!HovercraftCW_MA/HovercraftCW_MA_SINGLE_THREAD.exe
-!HovercraftCW_MA/HovercraftCW_MA_MULTITHREADED.exe
